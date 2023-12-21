@@ -229,6 +229,14 @@ State.prototype.update = function (time, keys) {
         return new State(this.level, actors, "lost");
     }
 
+    if (player.pos.x < 3.1) {
+        return new State(this.level, actors, "teleport_left");
+    }
+
+    if (player.pos.x > 76) {
+        return new State(this.level, actors, "teleport_right");
+    }
+
     for (let actor of actors) {
         if (actor != player && overlap(actor, player)) {
             newState = actor.collide(newState);
@@ -339,11 +347,21 @@ function runLevel(level, Display) {
         state = state.update(time, arrowKeys);
         display.syncState(state);
         if (state.status == "playing") {
+           // console.log(`${state.player.pos.x}`);
           return true;
         } else if (ending > 0) {
+           // console.log(`${state.player.pos.x}`);
           ending -= time;
           return true;
-        } else {
+        }  else if (state.status == "teleport_left"){
+          display.clear();
+          resolve(state.status);
+          return false;
+        }  else if (state.status == "teleport_right"){
+            display.clear();
+            resolve(state.status);
+            return false;
+          } else {
           display.clear();
           resolve(state.status);
           return false;
@@ -351,12 +369,18 @@ function runLevel(level, Display) {
       });
     });
   }
-
+  //TODO: change teleport to be based on collision with end or beginning of level
   async function runGame(plans, Display) {
     for (let level = 0; level < plans.length;) {
       let status = await runLevel(new Level(plans[level]),
                                   Display);
-      if (status == "won") level++;
+      if (status == "won" || (status == "teleport_right" && level != plans.length - 1) ){
+        console.log(`level ${level}`);
+        level++;
+      } else if (status == "teleport_left" && level != 0) {
+        console.log(`level ${level}`);
+        level++;
+      }
     }
     console.log("You've won!");
   }
