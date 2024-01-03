@@ -95,6 +95,25 @@ class Lava {
 
 Lava.prototype.size = new Vec(1, 1);
 
+class Teleport {
+    constructor(direction) {
+        this.direction = direction;
+    }
+
+    get type() { return "teleport_" + this.direction; }
+    //get direction() { return this.direction; }
+
+    static create(direction, ch) {
+        if (ch == ">") {
+            return new Teleport("forward", new Vec(2, 0));
+        } else if (ch == "<") {
+            return new Teleport("backward", new Vec(2, 0));
+        }
+    }
+}
+
+Teleport.prototype.size = new Vec(1, 1);
+
 class Coin {
     constructor(pos, basePos, wobble) {
         this.pos = pos;
@@ -116,7 +135,8 @@ Coin.prototype.size = new Vec(0.6, 0.6);
 const levelChars = {
     ".": "empty", "#": "wall", "+": "lava",
     "@": Player, "o": Coin,
-    "=": Lava, "|": Lava, "v": Lava
+    "=": Lava, "|": Lava, "v": Lava,
+    ">": "teleport_forward", "<": "teleport_backward"
 };
 
 let simpleLevel = new Level(simpleLevelPlan);
@@ -229,12 +249,12 @@ State.prototype.update = function (time, keys) {
         return new State(this.level, actors, "lost");
     }
 
-    if (player.pos.x < 3.1) {
-        return new State(this.level, actors, "teleport_left");
+    if (this.level.touches(player.pos, player.size, "teleport_forward")){
+        return new State(this.level, actors, "teleport_forward");
     }
 
-    if (player.pos.x > 76) {
-        return new State(this.level, actors, "teleport_right");
+    if (this.level.touches(player.pos, player.size, "teleport_backward")){
+        return new State(this.level, actors, "teleport_backward");
     }
 
     for (let actor of actors) {
@@ -254,6 +274,13 @@ function overlap(actor1, actor2) {
 
 Lava.prototype.collide = function (state) {
     return new State(state.level, state.actors, "lost");
+};
+
+Teleport.prototype.collide = function (state) {
+    return new State(state.level, state.actors, "playing");
+};
+
+Teleport.prototype.update = function (time, state) {
 };
 
 Coin.prototype.collide = function (state) {
@@ -347,17 +374,17 @@ function runLevel(level, Display) {
         state = state.update(time, arrowKeys);
         display.syncState(state);
         if (state.status == "playing") {
-           // console.log(`${state.player.pos.x}`);
+           //console.log(`${state.player.pos.x}`);
           return true;
         } else if (ending > 0) {
            // console.log(`${state.player.pos.x}`);
           ending -= time;
           return true;
-        }  else if (state.status == "teleport_left"){
+        }  else if (state.status == "teleport_forward"){
           display.clear();
           resolve(state.status);
           return false;
-        }  else if (state.status == "teleport_right"){
+        }  else if (state.status == "teleport_backward"){
             display.clear();
             resolve(state.status);
             return false;
@@ -374,12 +401,12 @@ function runLevel(level, Display) {
     for (let level = 0; level < plans.length;) {
       let status = await runLevel(new Level(plans[level]),
                                   Display);
-      if (status == "won" || (status == "teleport_right" && level != plans.length - 1) ){
+      if (status == "won" || (status == "teleport_forward" && level != plans.length - 1) ){
         console.log(`level ${level}`);
         level++;
-      } else if (status == "teleport_left" && level != 0) {
+      } else if (status == "teleport_backward" && level != 0) {
         console.log(`level ${level}`);
-        level++;
+        level--;
       }
     }
     console.log("You've won!");
