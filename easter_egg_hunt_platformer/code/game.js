@@ -2,7 +2,7 @@ let simpleLevelPlan = `
 ......................
 ..#................#..
 ..#..............=.#..
-..#.........o.o....#..
+..#.........1.2....#..
 ..#.@......#####...#..
 ..#####............#..
 ......#++++++++++++#..
@@ -12,11 +12,12 @@ let simpleLevelPlan = `
 
 class Level {
     constructor(plan) {
+        this.plan = plan;
         let rows = plan.trim().split("\n").map(l => [...l]);
         this.height = rows.length;
         this.width = rows[0].length;
         this.startActors = [];
-
+        
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
                 let type = levelChars[ch];
@@ -27,6 +28,10 @@ class Level {
             });
         });
     }
+
+    // static create(plan) {
+    //     return new Level(plan);
+    // }
 }
 
 class State {
@@ -61,6 +66,8 @@ class Player {
     constructor(pos, speed) {
         this.pos = pos;
         this.speed = speed;
+        // this.image = new Image();
+        // this.image.src = "./images/Little purple fire.gif";
     }
 
     get type() { return "player"; }
@@ -101,9 +108,8 @@ class Teleport {
     }
 
     get type() { return "teleport_" + this.direction; }
-    //get direction() { return this.direction; }
 
-    static create(direction, ch) {
+    static create(ch) {
         if (ch == ">") {
             return new Teleport("forward", new Vec(2, 0));
         } else if (ch == "<") {
@@ -115,18 +121,20 @@ class Teleport {
 Teleport.prototype.size = new Vec(1, 1);
 
 class Coin {
-    constructor(pos, basePos, wobble) {
+    constructor(pos, basePos, wobble, ch) {
         this.pos = pos;
         this.basePos = basePos;
         this.wobble = wobble;
+        this.ch = ch;
     }
 
     get type() { return "coin"; }
+    //get type() { return "coin_" + this.char; }
 
-    static create(pos) {
+    static create(pos, ch) {
         let basePos = pos.plus(new Vec(0.2, 0.1));
         return new Coin(basePos, basePos,
-            Math.random() * Math.PI * 2);
+            Math.random() * Math.PI * 2, ch);
     }
 }
 
@@ -134,7 +142,8 @@ Coin.prototype.size = new Vec(0.6, 0.6);
 
 const levelChars = {
     ".": "empty", "#": "wall", "+": "lava",
-    "@": Player, "o": Coin,
+    "@": Player,
+    "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
     ">": "teleport_forward", "<": "teleport_backward"
 };
@@ -249,11 +258,11 @@ State.prototype.update = function (time, keys) {
         return new State(this.level, actors, "lost");
     }
 
-    if (this.level.touches(player.pos, player.size, "teleport_forward")){
+    if (this.level.touches(player.pos, player.size, "teleport_forward")) {
         return new State(this.level, actors, "teleport_forward");
     }
 
-    if (this.level.touches(player.pos, player.size, "teleport_backward")){
+    if (this.level.touches(player.pos, player.size, "teleport_backward")) {
         return new State(this.level, actors, "teleport_backward");
     }
 
@@ -286,7 +295,8 @@ Teleport.prototype.update = function (time, state) {
 Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
-    if (!filtered.some(a => a.type == "coin")) status = "won";
+    state.level.plan  = state.level.plan.replace(this.ch, ".");
+    if (!filtered.some(a => a.type =="coin")) status = "won";
     return new State(state.level, filtered, status);
 };
 
@@ -307,7 +317,7 @@ Coin.prototype.update = function (time) {
     let wobble = this.wobble + time * wobbleSpeed;
     let wobblePos = Math.sin(wobble) * wobbleDist;
     return new Coin(this.basePos.plus(new Vec(0, wobblePos)),
-        this.basePos, wobble);
+        this.basePos, wobble, this.ch);
 };
 
 const playerXSpeed = 7;
@@ -365,49 +375,64 @@ function runAnimation(frameFunc) {
     requestAnimationFrame(frame);
 }
 
-function runLevel(level, Display) {
-    let display = new Display(document.body, level);
-    let state = State.start(level);
+function runLevel(levels, level, Display) {
+    console.log(`level runLevel ${level}`);
+    console.log("levels runLevel" + levels[level].plan);
+    let display = new Display(document.body, levels[level]);
+    let state = State.start(levels[level]);
     let ending = 1;
     return new Promise(resolve => {
-      runAnimation(time => {
-        state = state.update(time, arrowKeys);
-        display.syncState(state);
-        if (state.status == "playing") {
-           //console.log(`${state.player.pos.x}`);
-          return true;
-        } else if (ending > 0) {
-           // console.log(`${state.player.pos.x}`);
-          ending -= time;
-          return true;
-        }  else if (state.status == "teleport_forward"){
-          display.clear();
-          resolve(state.status);
-          return false;
-        }  else if (state.status == "teleport_backward"){
-            display.clear();
-            resolve(state.status);
-            return false;
-          } else {
-          display.clear();
-          resolve(state.status);
-          return false;
-        }
-      });
+        runAnimation(time => {
+            state = state.update(time, arrowKeys);
+            display.syncState(state);
+            if (state.status == "playing") {
+                //console.log(`${state.player.pos.x}`);
+                return true;
+            } else if (ending > 0) {
+                // console.log(`${state.player.pos.x}`);
+                ending -= time;
+                return true;
+            } else if (state.status == "teleport_forward") {
+                display.clear();
+                //levels[level] = new Level(state.level.plan);
+                console.log("teleport_forward")
+                resolve(state);
+                return false;
+            } else if (state.status == "teleport_backward") {
+                display.clear();
+                console.log("teleport_backward")
+                resolve(state);
+                return false;
+            } else {
+                display.clear();
+                resolve(state);
+                return false;
+            }
+        });
     });
-  }
-  //TODO: change teleport to be based on collision with end or beginning of level
-  async function runGame(plans, Display) {
+}
+//TODO: change teleport to be based on collision with end or beginning of level
+async function runGame(plans, Display) {
+    let levels = [];
+    for (let level = 0; level < plans.length; level++) {
+        levels.push(new Level(plans[level]));
+        console.log(level)
+    }
     for (let level = 0; level < plans.length;) {
-      let status = await runLevel(new Level(plans[level]),
-                                  Display);
-      if (status == "won" || (status == "teleport_forward" && level != plans.length - 1) ){
-        console.log(`level ${level}`);
-        level++;
-      } else if (status == "teleport_backward" && level != 0) {
-        console.log(`level ${level}`);
-        level--;
-      }
+        console.log("start");
+        let state = await runLevel(levels, level,
+            Display);
+            levels[level] = new Level(state.level.plan);
+            console.log("levels[level]1"+ levels[level].plan);
+        if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
+            console.log(`level ${level}`);
+            console.log("levels[level]2"+ levels[level].plan);
+            level++;
+        } else if (state.status == "teleport_backward" && level != 0) {
+            console.log(`level ${level}`);
+            console.log("levels[level]3"+ levels[level].plan);
+            level--;
+        }
     }
     console.log("You've won!");
-  }
+}
