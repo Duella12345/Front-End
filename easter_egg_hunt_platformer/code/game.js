@@ -29,9 +29,6 @@ class Level {
         });
     }
 
-    // static create(plan) {
-    //     return new Level(plan);
-    // }
 }
 
 class State {
@@ -120,6 +117,27 @@ class Teleport {
 
 Teleport.prototype.size = new Vec(1, 1);
 
+class Wall {
+    constructor(pos, visible, ch) {
+        this.pos = pos;
+        this.visible = visible;
+        this.ch = ch;
+    }
+
+    get type() { return this.visible;}
+
+    static create(pos,ch) {
+        if (ch=="#"){
+            return new Wall(pos, "wall", ch);
+        } else if (ch == "x"){
+            return new Wall(pos, "invisible_wall", ch);
+        }
+        
+    }
+}
+
+Wall.prototype.size = new Vec(1, 1);
+
 class Coin {
     constructor(pos, basePos, wobble, ch) {
         this.pos = pos;
@@ -129,7 +147,6 @@ class Coin {
     }
 
     get type() { return "coin"; }
-    //get type() { return "coin_" + this.char; }
 
     static create(pos, ch) {
         let basePos = pos.plus(new Vec(0.2, 0.1));
@@ -140,9 +157,28 @@ class Coin {
 
 Coin.prototype.size = new Vec(0.6, 0.6);
 
+class Glasses {
+    constructor(pos, basePos, wobble, ch,) {
+        this.pos = pos;
+        this.basePos = basePos;
+        this.wobble = wobble;
+        this.ch = ch;
+    }
+
+    get type() { return "glasses"; }
+
+    static create(pos, ch) {
+        let basePos = pos.plus(new Vec(0.2, 0.1));
+        return new Glasses(basePos, basePos,
+            Math.random() * Math.PI * 2, ch);
+    }
+}
+
+Glasses.prototype.size = new Vec(0.6, 0.6);
+
 const levelChars = {
-    ".": "empty", "#": "wall", "^": "pad","+": "lava",
-    "@": Player,
+    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": "invisible_wall",
+    "@": Player, "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
     ">": "teleport_forward", "<": "teleport_backward"
@@ -289,6 +325,10 @@ Teleport.prototype.collide = function (state) {
     return new State(state.level, state.actors, "playing");
 };
 
+Wall.prototype.collide = function (state) {
+    return new State(state.level, state.actors, "playing");
+};
+
 Teleport.prototype.update = function (time, state) {
 };
 
@@ -298,6 +338,23 @@ Coin.prototype.collide = function (state) {
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     if (!filtered.some(a => a.type =="coin")) status = "won";
     return new State(state.level, filtered, status);
+};
+
+Glasses.prototype.collide = function (state) {
+    let filtered = state.actors.filter(a => a != this);
+    filtered = state.actors.filter(a => a.type != "invisible_wall");
+    for (let i = 0; i < filtered.length; i++){
+        if (filtered[i].type == "invisible_wall"){
+            filtered[i].type = "wall"
+        }
+    }
+    state.level.plan  = state.level.plan.replace(this.ch, ".");
+    state.level.plan  = state.level.plan.replace("x", "#");
+    let level = new Level(state.level.plan)
+    console.log("filtered")
+
+    //console.log("plan after" + state.level.plan)
+    return new State(level, filtered, state.status);
 };
 
 Lava.prototype.update = function (time, state) {
@@ -317,6 +374,17 @@ Coin.prototype.update = function (time) {
     let wobble = this.wobble + time * wobbleSpeed;
     let wobblePos = Math.sin(wobble) * wobbleDist;
     return new Coin(this.basePos.plus(new Vec(0, wobblePos)),
+        this.basePos, wobble, this.ch);
+};
+
+Wall.prototype.update = function (time) {
+    return new Wall(this.pos, this.visible, this.ch);
+};
+
+Glasses.prototype.update = function (time) {
+    let wobble = this.wobble + time * wobbleSpeed;
+    let wobblePos = Math.sin(wobble) * wobbleDist;
+    return new Glasses(this.basePos.plus(new Vec(0, wobblePos)),
         this.basePos, wobble, this.ch);
 };
 

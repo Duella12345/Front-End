@@ -11,9 +11,11 @@
 /* actors */
 .actor  { position: absolute;            }
 .coin   { background: rgb(241, 229, 89); }
+.glasses   { background: purple; }
 .player { background: rgb(64, 64, 64);   }
 .teleport_forward { background: blue;   }
 .teleport_backward { background: blueviolet;   }
+.invisible_wall { background: grey;}
 
 /* player win lose */
 .lost .player {
