@@ -15,6 +15,14 @@
 .player { background: rgb(64, 64, 64);   }
 .teleport_forward { background: blue;   }
 .teleport_backward { background: blueviolet;   }
+
+.teleport_backward .player {
+  box-shadow: -4px -7px 8px white, 4px -7px 8px white;
+}
+.teleport_forward .player {
+  box-shadow: -4px -7px 8px white, 4px -7px 8px white;
+}
+
 .invisible_wall { background: grey;}
 
 /* player win lose */
