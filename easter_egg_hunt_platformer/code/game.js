@@ -126,7 +126,7 @@ class Wall {
 
     get type() { return this.visible;}
 
-    static create(pos,ch) {
+    static create(pos, ch) {
         if (ch=="#"){
             return new Wall(pos, "wall", ch);
         } else if (ch == "x"){
@@ -158,7 +158,7 @@ class Coin {
 Coin.prototype.size = new Vec(0.6, 0.6);
 
 class Glasses {
-    constructor(pos, basePos, wobble, ch,) {
+    constructor(pos, basePos, wobble, ch) {
         this.pos = pos;
         this.basePos = basePos;
         this.wobble = wobble;
@@ -177,7 +177,7 @@ class Glasses {
 Glasses.prototype.size = new Vec(0.6, 0.6);
 
 const levelChars = {
-    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": "invisible_wall",
+    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Wall,
     "@": Player, "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
@@ -341,17 +341,22 @@ Coin.prototype.collide = function (state) {
 };
 
 Glasses.prototype.collide = function (state) {
-    let filtered = state.actors.filter(a => a != this);
-    filtered = state.actors.filter(a => a.type != "invisible_wall");
-    for (let i = 0; i < filtered.length; i++){
-        if (filtered[i].type == "invisible_wall"){
-            filtered[i].type = "wall"
+
+    for (let i = 0; i < state.actors.length; i++){
+        //console.log(state.actors[i].type.toString())
+        if (state.actors[i].type == "invisible_wall"){
+            state.actors[i] = new Wall(state.actors[i].pos, "wall")
         }
     }
+   let filtered = state.actors.filter(a => a.type != "invisible_wall");
+   //filtered = filtered.filter(a => a.type != this.type);
+    for (let i = 0; i < filtered.length; i++){
+        console.log(filtered[i].type.toString())
+    }
+
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replace("x", "#");
     let level = new Level(state.level.plan)
-    console.log("filtered")
 
     //console.log("plan after" + state.level.plan)
     return new State(level, filtered, state.status);
