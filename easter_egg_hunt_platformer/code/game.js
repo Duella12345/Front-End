@@ -141,7 +141,7 @@ class Coin {
 Coin.prototype.size = new Vec(0.6, 0.6);
 
 const levelChars = {
-    ".": "empty", "#": "wall", "+": "lava",
+    ".": "empty", "#": "wall", "^": "pad","+": "lava",
     "@": Player,
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
@@ -239,7 +239,7 @@ Level.prototype.touches = function (pos, size, type) {
         for (let x = xStart; x < xEnd; x++) {
             let isOutside = x < 0 || x >= this.width ||
                 y < 0 || y >= this.height;
-            let here = isOutside ? "wall" : this.rows[y][x];
+            let here = isOutside ? "wall"||"pad" : this.rows[y][x];
             if (here == type) return true;
         }
     }
@@ -302,7 +302,7 @@ Coin.prototype.collide = function (state) {
 
 Lava.prototype.update = function (time, state) {
     let newPos = this.pos.plus(this.speed.times(time));
-    if (!state.level.touches(newPos, this.size, "wall")) {
+    if (!state.level.touches(newPos, this.size, "wall")&&!state.level.touches(newPos, this.size, "pad")) {
         return new Lava(newPos, this.speed, this.reset);
     } else if (this.reset) {
         return new Lava(this.reset, this.speed, this.reset);
@@ -330,13 +330,13 @@ Player.prototype.update = function (time, state, keys) {
     if (keys.ArrowRight | keys.d) xSpeed += playerXSpeed;
     let pos = this.pos;
     let movedX = pos.plus(new Vec(xSpeed * time, 0));
-    if (!state.level.touches(movedX, this.size, "wall")) {
+    if (!state.level.touches(movedX, this.size, "wall")&&!state.level.touches(movedX, this.size, "pad")) {
         pos = movedX;
     }
 
     let ySpeed = this.speed.y + time * gravity;
     let movedY = pos.plus(new Vec(0, ySpeed * time));
-    if (!state.level.touches(movedY, this.size, "wall")) {
+    if (!state.level.touches(movedY, this.size, "wall")&&!state.level.touches(movedY, this.size, "pad")) {
         pos = movedY;
     } else if ((keys.ArrowUp | keys.w) && ySpeed > 0) {
         ySpeed = -jumpSpeed;
