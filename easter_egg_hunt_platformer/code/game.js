@@ -16,7 +16,6 @@ class Level {
         this.height = rows.length;
         this.width = rows[0].length;
         this.startActors = [];
-        this.backgroundAudio = document.querySelector("#audio");
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -79,7 +78,7 @@ class Player {
     }
 }
 
-Player.prototype.size = new Vec(0.8, 1.5);
+Player.prototype.size = new Vec(0.5, 1.5);
 
 class Lava {
     constructor(pos, speed, reset) {
@@ -464,12 +463,13 @@ function runLevel(levels, level, Display) {
     let display = new Display(document.body, levels[level]);
     let state = State.start(levels[level]);
     let ending = 1;
+    let backgroundAudio = [document.querySelector("#audio_one"), document.querySelector("#audio_two")][level%2];
     return new Promise(resolve => {
         runAnimation(time => {
             state = state.update(time, arrowKeys);
             display.syncState(state);
             //stop autoplayback error
-            var playPromise = state.level.backgroundAudio.play()
+            var playPromise = backgroundAudio.play()
             if (playPromise !== undefined) {
               playPromise.then(_ => {
                 // Automatic playback started!
@@ -482,23 +482,23 @@ function runLevel(levels, level, Display) {
                 //console.log(`${state.player.pos.x}`);
                 return true;
             } else if (ending > 0) {
-                state.level.backgroundAudio.pause();
-                state.level.backgroundAudio.currentTime = 0;
+                backgroundAudio.pause();
+                backgroundAudio.currentTime = 0;
                 ending -= time;
                 return true;
             } else if (state.status == "teleport_forward") {
                 display.clear();
                 //levels[level] = new Level(state.level.plan);
                 console.log("teleport_forward")
-                state.level.backgroundAudio.pause();
-                state.level.backgroundAudio.currentTime = 0;
+                backgroundAudio.pause();
+                backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
             } else if (state.status == "teleport_backward") {
                 display.clear();
                 console.log("teleport_backward")
-                state.level.backgroundAudio.pause();
-                state.level.backgroundAudio.currentTime = 0;
+                backgroundAudio.pause();
+                backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
             } else {
