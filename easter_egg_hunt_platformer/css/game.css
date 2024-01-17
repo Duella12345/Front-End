@@ -1,6 +1,19 @@
 /* background*/
 .background {
-  background: rgb(52, 166, 251);
+  /* background: rgb(149, 69, 53); */
+  /* background-image:
+  linear-gradient(45deg, #808080 25%, transparent 25%), 
+  linear-gradient(-45deg, #808080 25%, transparent 25%),
+  linear-gradient(45deg, transparent 75%, #808080 75%),
+  linear-gradient(-45deg, transparent 75%, #808080 75%);
+  background-size:20px 20px;    
+  background-position:0 0, 10px 0, 10px -10px, 0px 10px; */
+  background-image: url("../images/vectorstock_42372271.jpg");
+  background-size: 800px;
+  /* linear-gradient(0deg, transparent 50%, rgb(149, 69, 53) 50%),
+  linear-gradient(90deg, rgb(149, 69, 53) 50%, rgb(129,134,165)50%);
+  background-size:100px 100px,50px 50px;
+  background-position:0 0, 0 10px; */
   table-layout: fixed;
   border-spacing: 0;
 }
