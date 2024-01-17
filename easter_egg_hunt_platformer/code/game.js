@@ -177,7 +177,7 @@ class Glasses {
     }
 }
 
-Glasses.prototype.size = new Vec(0.6, 0.6);
+Glasses.prototype.size = new Vec(1, 0.6);
 
 const levelChars = {
     ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Block,
