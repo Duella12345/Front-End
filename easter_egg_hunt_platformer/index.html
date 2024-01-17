@@ -1,46 +1,37 @@
-<!-- created using tutorial https://eloquentjavascript.net/16_game.html music by leohpaz https://leohpaz.itch.io/minifantasy-dungeon-sfx-pack 
- and kronbits https://kronbits.itch.io/freesfx-->
-<!doctype html>
-<script src="./code/game.js"></script>
-<script src="./code/levels.js"></script>
+<html>
+<head>
+    <style>
+        .gamewindow {
+            width: 600px;
+            height: 470px;
+            margin: 0 auto;
+            background-color: #000000;
+        }
+        .description {
+            width: 600px;
+            height: 200px;
+            margin: 0 auto;
+        }
+    </style>
 
-<link rel="stylesheet" href="./css/game.css">
-
-<audio id="audio_one">
-  <source src="./sound/background/Goblins_Dance_(Battle).wav" type="audio/mpeg">
-</audio>
-
-<audio id="audio_two">
-  <source src="./sound/background/Goblins_Den_(Regular).wav" type="audio/mpeg">
-</audio>
-
-<audio id="teleport">
-  <source src="./sound/effects/Retro Magic 06.wav" type="audio/mpeg">
-</audio>
-
-<audio id="lava">
-  <source src="./sound/effects/Retro Impact Water 03.wav" type="audio/mpeg">
-</audio>
-
-<audio id="coin">
-  <source src="./sound/effects/Retro PickUp Coin 07.wav" type="audio/mpeg">
-</audio>
-
-<audio id="glasses">
-  <source src="./sound/effects/Retro PowerUP 09.wav" type="audio/mpeg">
-</audio>
-
-<audio id="levelComplete">
-  <source src="./sound/effects/Retro Event Acute 08.wav" type="audio/mpeg">
-</audio>
-
-<audio id="jump">
-  <source src="./sound/effects/Retro Jump 01.wav" type="audio/mpeg">
-</audio>
-
-
+</head>
 <body>
-  <script>
-    runGame(GAME_LEVELS, DOMDisplay);
-  </script>
-</body>
+    <center><h1>Bookworm's Library</h1></center>
+    <div class="gamewindow">
+        <iframe class="gamewindow" id="bookworm" src="game.html" title="Bookworm"></iframe>
+    </div>
+    <div class="description">
+        <br>
+        Welcome to Bookworm's Library.<br><br>
+        Use the arrow keys (or 'wasd' keys) to control the Bookworm. <br>
+        Move around the library, and gather up the golden book tokens, while avoiding the lava.<br>
+        (Lava!? This library was clearly build in a poor location!)<br><br>
+        Look out for the special purple Reading Glasses, which let you see secret shelves and walls.<br>
+        Use the doors to move back and forth between rooms, or collect all the book tokens in a room to be teleported away to next room.
+    </div>
+    <script>
+        var myiframe = document.getElementById("bookworm");
+        myiframe.focus();
+    </script>
+    </body>
+</html>
