@@ -484,23 +484,23 @@ function runLevel(levels, level, Display) {
                 //console.log(`${state.player.pos.x}`);
                 return true;
             } else if (ending > 0) {
-                state.level.backgroundSound.pause();
-                state.level.backgroundSound.currentTime = 0;
+                state.level.backgroundAudio.pause();
+                state.level.backgroundAudio.currentTime = 0;
                 ending -= time;
                 return true;
             } else if (state.status == "teleport_forward") {
                 display.clear();
                 //levels[level] = new Level(state.level.plan);
                 console.log("teleport_forward")
-                state.level.backgroundSound.pause();
-                state.level.backgroundSound.currentTime = 0;
+                state.level.backgroundAudio.pause();
+                state.level.backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
             } else if (state.status == "teleport_backward") {
                 display.clear();
                 console.log("teleport_backward")
-                state.level.backgroundSound.pause();
-                state.level.backgroundSound.currentTime = 0;
+                state.level.backgroundAudio.pause();
+                state.level.backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
             } else {
