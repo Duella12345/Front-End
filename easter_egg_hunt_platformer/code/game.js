@@ -421,6 +421,7 @@ Player.prototype.update = function (time, state, keys) {
     if (!state.level.touches(movedY, this.size, "wall")&&!state.level.touches(movedY, this.size, "pad")) {
         pos = movedY;
     } else if ((keys.ArrowUp | keys.w) && ySpeed > 0) {
+        sfx("#jump")
         ySpeed = -jumpSpeed;
     } else {
         ySpeed = 0;
@@ -434,9 +435,6 @@ function trackKeys(keys) {
         if (keys.includes(event.key)) {
             down[event.key] = event.type == "keydown";
             event.preventDefault();
-            if (event.key == "w" || event.key == "ArrowUp"){
-                sfx("#jump")
-            }
         }
     }
     window.addEventListener("keydown", track);
