@@ -30,8 +30,14 @@
         Use the doors to move back and forth between rooms, or collect all the book tokens in a room to be teleported away to next room.
     </div>
     <script>
-        var myiframe = document.getElementById("bookworm");
-        myiframe.focus();
+        function focusOnGame() {
+            var myiframe = document.getElementById("bookworm");
+            myiframe.focus();
+        }
+        focusOnGame();
+        document.body.addEventListener("click", function (evt) {
+            focusOnGame();
+        });
     </script>
     </body>
 </html>
