@@ -9,7 +9,6 @@ let simpleLevelPlan = `
 ......##############..
 ......................`;
 
-
 class Level {
     constructor(plan) {
         this.plan = plan;
@@ -17,6 +16,7 @@ class Level {
         this.height = rows.length;
         this.width = rows[0].length;
         this.startActors = [];
+        this.backgroundAudio = document.querySelector("#audio");
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -29,6 +29,12 @@ class Level {
         });
     }
 
+}
+
+function sfx(querySelector){
+    document.querySelector(querySelector).pause();
+    document.querySelector(querySelector).currentTime = 0;;
+    document.querySelector(querySelector).play();
 }
 
 class State {
@@ -63,8 +69,6 @@ class Player {
     constructor(pos, speed) {
         this.pos = pos;
         this.speed = speed;
-        // this.image = new Image();
-        // this.image.src = "./images/Little purple fire.gif";
     }
 
     get type() { return "player"; }
@@ -117,7 +121,7 @@ class Teleport {
 
 Teleport.prototype.size = new Vec(1, 1);
 
-class Wall {
+class Block {
     constructor(pos, visible, ch) {
         this.pos = pos;
         this.visible = visible;
@@ -128,15 +132,15 @@ class Wall {
 
     static create(pos, ch) {
         if (ch=="#"){
-            return new Wall(pos, "wall", ch);
+            return new Block(pos, "wall", ch);
         } else if (ch == "x"){
-            return new Wall(pos, "invisible_wall", ch);
+            return new Block(pos, "invisible_wall", ch);
         }
         
     }
 }
 
-Wall.prototype.size = new Vec(1, 1);
+Block.prototype.size = new Vec(1, 1);
 
 class Coin {
     constructor(pos, basePos, wobble, ch) {
@@ -177,7 +181,7 @@ class Glasses {
 Glasses.prototype.size = new Vec(0.6, 0.6);
 
 const levelChars = {
-    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Wall,
+    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Block,
     "@": Player, "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
@@ -291,14 +295,17 @@ State.prototype.update = function (time, keys) {
 
     let player = newState.player;
     if (this.level.touches(player.pos, player.size, "lava")) {
+        sfx("#lava")
         return new State(this.level, actors, "lost");
     }
 
     if (this.level.touches(player.pos, player.size, "teleport_forward")) {
+        sfx("#teleport")
         return new State(this.level, actors, "teleport_forward");
     }
 
     if (this.level.touches(player.pos, player.size, "teleport_backward")) {
+        sfx("#teleport")
         return new State(this.level, actors, "teleport_backward");
     }
 
@@ -318,6 +325,7 @@ function overlap(actor1, actor2) {
 }
 
 Lava.prototype.collide = function (state) {
+    sfx("#lava")
     return new State(state.level, state.actors, "lost");
 };
 
@@ -325,7 +333,7 @@ Teleport.prototype.collide = function (state) {
     return new State(state.level, state.actors, "playing");
 };
 
-Wall.prototype.collide = function (state) {
+Block.prototype.collide = function (state) {
     return new State(state.level, state.actors, "playing");
 };
 
@@ -333,32 +341,33 @@ Teleport.prototype.update = function (time, state) {
 };
 
 Coin.prototype.collide = function (state) {
+    sfx("#coin");
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
-    if (!filtered.some(a => a.type =="coin")) status = "won";
+    if (!filtered.some(a => a.type =="coin")){
+        sfx("#levelComplete");
+        status = "won";
+    }
     return new State(state.level, filtered, status);
 };
 
 Glasses.prototype.collide = function (state) {
-
+    sfx("#glasses")
     for (let i = 0; i < state.actors.length; i++){
-        //console.log(state.actors[i].type.toString())
         if (state.actors[i].type == "invisible_wall"){
-            state.actors[i] = new Wall(state.actors[i].pos, "wall")
+            state.actors[i] = new Block(state.actors[i].pos, "wall")
         }
     }
-   let filtered = state.actors.filter(a => a.type != "invisible_wall");
-   //filtered = filtered.filter(a => a.type != this.type);
-    for (let i = 0; i < filtered.length; i++){
-        console.log(filtered[i].type.toString())
-    }
-
+    // console.log("before");
+    // console.log(state.actors);
+   let filtered = state.actors.filter(a => a.type != this.type);
+//    console.log("after");
+//    console.log(filtered);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
-    state.level.plan  = state.level.plan.replace("x", "#");
+    state.level.plan  = state.level.plan.replaceAll("x", "#");
     let level = new Level(state.level.plan)
 
-    //console.log("plan after" + state.level.plan)
     return new State(level, filtered, state.status);
 };
 
@@ -382,8 +391,8 @@ Coin.prototype.update = function (time) {
         this.basePos, wobble, this.ch);
 };
 
-Wall.prototype.update = function (time) {
-    return new Wall(this.pos, this.visible, this.ch);
+Block.prototype.update = function (time) {
+    return new Block(this.pos, this.visible, this.ch);
 };
 
 Glasses.prototype.update = function (time) {
@@ -425,6 +434,9 @@ function trackKeys(keys) {
         if (keys.includes(event.key)) {
             down[event.key] = event.type == "keydown";
             event.preventDefault();
+            if (event.key == "w" || event.key == "ArrowUp"){
+                sfx("#jump")
+            }
         }
     }
     window.addEventListener("keydown", track);
@@ -458,22 +470,37 @@ function runLevel(levels, level, Display) {
         runAnimation(time => {
             state = state.update(time, arrowKeys);
             display.syncState(state);
+            //stop autoplayback error
+            var playPromise = state.level.sound.play()
+            if (playPromise !== undefined) {
+              playPromise.then(_ => {
+                // Automatic playback started!
+              })
+              .catch(error => {
+                // Auto-play was prevented
+              });
+            }
             if (state.status == "playing") {
                 //console.log(`${state.player.pos.x}`);
                 return true;
             } else if (ending > 0) {
-                // console.log(`${state.player.pos.x}`);
+                state.level.sound.pause();
+                state.level.sound.currentTime = 0;
                 ending -= time;
                 return true;
             } else if (state.status == "teleport_forward") {
                 display.clear();
                 //levels[level] = new Level(state.level.plan);
                 console.log("teleport_forward")
+                state.level.sound.pause();
+                state.level.sound.currentTime = 0;
                 resolve(state);
                 return false;
             } else if (state.status == "teleport_backward") {
                 display.clear();
                 console.log("teleport_backward")
+                state.level.sound.pause();
+                state.level.sound.currentTime = 0;
                 resolve(state);
                 return false;
             } else {

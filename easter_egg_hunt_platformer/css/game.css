@@ -23,7 +23,6 @@
   box-shadow: -4px -7px 8px white, 4px -7px 8px white;
 }
 
-.invisible_wall { background: grey;}
 
 /* player win lose */
 .lost .player {

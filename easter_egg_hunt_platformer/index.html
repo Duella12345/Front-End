@@ -1,9 +1,39 @@
-<!-- created using tutorial https://eloquentjavascript.net/16_game.html -->
+<!-- created using tutorial https://eloquentjavascript.net/16_game.html music by leohpaz https://leohpaz.itch.io/minifantasy-dungeon-sfx-pack 
+ and kronbits https://kronbits.itch.io/freesfx-->
 <!doctype html>
 <script src="./code/game.js"></script>
 <script src="./code/levels.js"></script>
 
 <link rel="stylesheet" href="./css/game.css">
+
+<audio id="audio">
+  <source src="./sound/background/Goblins_Dance_(Battle).wav" type="audio/mpeg">
+</audio>
+
+<audio id="teleport">
+  <source src="./sound/effects/Retro Magic 06.wav" type="audio/mpeg">
+</audio>
+
+<audio id="lava">
+  <source src="./sound/effects/Retro Impact Water 03.wav" type="audio/mpeg">
+</audio>
+
+<audio id="coin">
+  <source src="./sound/effects/Retro PickUp Coin 07.wav" type="audio/mpeg">
+</audio>
+
+<audio id="glasses">
+  <source src="./sound/effects/Retro PowerUP 09.wav" type="audio/mpeg">
+</audio>
+
+<audio id="levelComplete">
+  <source src="./sound/effects/Retro Event Acute 08.wav" type="audio/mpeg">
+</audio>
+
+<audio id="jump">
+  <source src="./sound/effects/Retro Jump 01.wav" type="audio/mpeg">
+</audio>
+
 
 <body>
   <script>
