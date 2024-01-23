@@ -181,7 +181,7 @@ Glasses.prototype.size = new Vec(1, 0.6);
 
 const levelChars = {
     ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Block,
-    "@": Player, "o": Glasses, 
+    "@": Player, "%": "player_right", "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
     ">": "teleport_forward", "<": "teleport_backward"
@@ -358,11 +358,7 @@ Glasses.prototype.collide = function (state) {
             state.actors[i] = new Block(state.actors[i].pos, "wall")
         }
     }
-    // console.log("before");
-    // console.log(state.actors);
    let filtered = state.actors.filter(a => a.type != this.type);
-//    console.log("after");
-//    console.log(filtered);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replaceAll("x", "#");
     let level = new Level(state.level.plan)
@@ -525,10 +521,18 @@ async function runGame(plans, Display) {
         if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
             console.log(`level ${level}`);
             console.log("levels[level]2"+ levels[level].plan);
+
+            state.level.plan  = state.level.plan.replace("%", "@");
+            state.level.plan  = state.level.plan.replace("@", "%");
+
+            levels[level] = new Level(state.level.plan)
             level++;
         } else if (state.status == "teleport_backward" && level != 0) {
             console.log(`level ${level}`);
             console.log("levels[level]3"+ levels[level].plan);
+            state.level.plan  = state.level.plan.replace("%", "@");
+            state.level.plan  = state.level.plan.replace("@", "%");
+            levels[level] = new Level(state.level.plan)
             level--;
         }
     }
