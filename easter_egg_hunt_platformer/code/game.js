@@ -7,6 +7,7 @@ class Level {
         this.width = rows[0].length;
         this.startActors = [];
         this.finalLevel = finalLevel;
+        this.haveSwitchStarts = false;
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -172,7 +173,7 @@ Glasses.prototype.size = new Vec(1, 0.6);
 
 const levelChars = {
     ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Block,
-    "@": Player, "%": "player_right", "o": Glasses, 
+    "$": "player_left", "%": "player_right", "@": Player, "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
     ">": "teleport_forward", "<": "teleport_backward"
@@ -444,6 +445,7 @@ function runLevel(levels, level, Display) {
     
     let display = new Display(document.body, levels[level]);
     let state = State.start(levels[level]);
+    console.debug(state.level.plan)
     let ending = 1;
     let backgroundAudio = [document.querySelector("#audio_one"), document.querySelector("#audio_two")][level%2];
     return new Promise(resolve => {
@@ -453,12 +455,14 @@ function runLevel(levels, level, Display) {
 
             //stop autoplayback error
             var playPromise = backgroundAudio.play()
+
             if (playPromise !== undefined) {
               playPromise.then(_ => {
-                // Automatic playback started!
+                console.debug("playback started!")
+                
               })
               .catch(error => {
-                // Auto-play was prevented
+                console.debug("playback error {}", error)
               });
             }
             if (state.status == "playing") {
@@ -472,7 +476,7 @@ function runLevel(levels, level, Display) {
 
             } else if (state.status == "teleport_forward") {
                 display.clear();
-                console.log("teleport_forward")
+                console.debug("teleport_forward")
                 backgroundAudio.pause();
                 backgroundAudio.currentTime = 0;
                 resolve(state);
@@ -480,7 +484,7 @@ function runLevel(levels, level, Display) {
 
             } else if (state.status == "teleport_backward") {
                 display.clear();
-                console.log("teleport_backward")
+                console.debug("teleport_backward")
                 backgroundAudio.pause();
                 backgroundAudio.currentTime = 0;
                 resolve(state);
@@ -504,31 +508,48 @@ async function runGame(plans, Display) {
             levels.push(new Level(plans[level], false));
 
         } else {
-
             levels.push(new Level(plans[level], true));    
         }
     }
-    
+
     for (let level = 0; level < plans.length;) {
 
         let state = await runLevel(levels, level, Display);
-        levels[level] = new Level(state.level.plan, state.level.finalLevel);
+        //levels[level] = new Level(state.level.plan, state.level.finalLevel);
 
         if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
-            state.level.plan  = state.level.plan.replace("%", "£");
-            state.level.plan  = state.level.plan.replace("@", "%");
-            state.level.plan  = state.level.plan.replace("£", "@");
-
-            levels[level] = new Level(state.level.plan, state.level.finalLevel)
+            levels[level] = new Level(state.level.plan, state.level.finalLevel);
+            
+            //make sure player starts on left on new level
             level++;
+            // return Player to player_left or player_right
+            if (levels[level].plan.includes("%")) {
+                console.debug("replace @ with $ in next level")
+                levels[level].plan = levels[level].plan.replace("@", "$");
+            } else {
+                console.debug("replace @ with % in next level")
+                levels[level].plan = levels[level].plan.replace("@", "%");
+            }
+
+            console.debug("replace $ with @ in next level {}", level)
+            levels[level] = new Level(levels[level].plan.replace("$", "@"), levels[level].finalLevel);
 
         } else if (state.status == "teleport_backward" && level != 0) {
-            state.level.plan  = state.level.plan.replace("%", "£");
-            state.level.plan  = state.level.plan.replace("@", "%");
-            state.level.plan  = state.level.plan.replace("£", "@");
+            levels[level] = new Level(state.level.plan, state.level.finalLevel);
 
-            levels[level] = new Level(state.level.plan)
+            //make sure player starts on left on new level
             level--;
+            // return Player to player_left or player_right
+            if (levels[level].plan.includes("%")) {
+                console.debug("replace @ with $ in next level")
+                levels[level].plan = levels[level].plan.replace("@", "$");
+            } else {
+                console.debug("replace @ with % in next level")
+                levels[level].plan = levels[level].plan.replace("@", "%");
+            }
+
+            console.debug("replace % with @ in next level {}", level)
+            levels[level] = new Level(levels[level].plan.replace("%", "@"), levels[level].finalLevel);
         }
     }
     console.log("You've won!");
