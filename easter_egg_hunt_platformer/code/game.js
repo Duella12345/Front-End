@@ -1,21 +1,12 @@
-let simpleLevelPlan = `
-......................
-..#................#..
-..#..............=.#..
-..#.........1.2....#..
-..#.@......#####...#..
-..#####............#..
-......#++++++++++++#..
-......##############..
-......................`;
 
 class Level {
-    constructor(plan) {
+    constructor(plan, finalLevel) {
         this.plan = plan;
         let rows = plan.trim().split("\n").map(l => [...l]);
         this.height = rows.length;
         this.width = rows[0].length;
         this.startActors = [];
+        this.finalLevel = finalLevel;
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -32,7 +23,7 @@ class Level {
 
 function sfx(querySelector){
     document.querySelector(querySelector).pause();
-    document.querySelector(querySelector).currentTime = 0;;
+    document.querySelector(querySelector).currentTime = 0;
     document.querySelector(querySelector).play();
 }
 
@@ -187,10 +178,6 @@ const levelChars = {
     ">": "teleport_forward", "<": "teleport_backward"
 };
 
-let simpleLevel = new Level(simpleLevelPlan);
-console.log(`${simpleLevel.width} by ${simpleLevel.height}`);
-// → 22 by 9
-
 function elt(name, attrs, ...children) {
     let dom = document.createElement(name);
     for (let attr of Object.keys(attrs)) {
@@ -344,9 +331,9 @@ Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
-    if (!filtered.some(a => a.type =="coin")){
-        sfx("#levelComplete");
-        status = "won";
+    if (!filtered.some(a => a.type =="coin" && !state.level.finalLevel)){
+            sfx("#levelComplete");
+            status = "won";
     }
     return new State(state.level, filtered, status);
 };
@@ -361,7 +348,7 @@ Glasses.prototype.collide = function (state) {
    let filtered = state.actors.filter(a => a.type != this.type);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replaceAll("x", "#");
-    let level = new Level(state.level.plan)
+    let level = new Level(state.level.plan, state.level.finalLevel)
 
     return new State(level, filtered, state.status);
 };
@@ -454,8 +441,7 @@ function runAnimation(frameFunc) {
 }
 
 function runLevel(levels, level, Display) {
-    console.log(`level runLevel ${level}`);
-    console.log("levels runLevel" + levels[level].plan);
+    
     let display = new Display(document.body, levels[level]);
     let state = State.start(levels[level]);
     let ending = 1;
@@ -464,6 +450,7 @@ function runLevel(levels, level, Display) {
         runAnimation(time => {
             state = state.update(time, arrowKeys);
             display.syncState(state);
+
             //stop autoplayback error
             var playPromise = backgroundAudio.play()
             if (playPromise !== undefined) {
@@ -475,21 +462,22 @@ function runLevel(levels, level, Display) {
               });
             }
             if (state.status == "playing") {
-                //console.log(`${state.player.pos.x}`);
                 return true;
+
             } else if (ending > 0) {
                 backgroundAudio.pause();
                 backgroundAudio.currentTime = 0;
                 ending -= time;
                 return true;
+
             } else if (state.status == "teleport_forward") {
                 display.clear();
-                //levels[level] = new Level(state.level.plan);
                 console.log("teleport_forward")
                 backgroundAudio.pause();
                 backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
+
             } else if (state.status == "teleport_backward") {
                 display.clear();
                 console.log("teleport_backward")
@@ -497,41 +485,48 @@ function runLevel(levels, level, Display) {
                 backgroundAudio.currentTime = 0;
                 resolve(state);
                 return false;
+
             } else {
                 display.clear();
                 resolve(state);
+                backgroundAudio.pause();
+                backgroundAudio.currentTime = 0;
                 return false;
             }
         });
     });
 }
-//TODO: change teleport to be based on collision with end or beginning of level
+
 async function runGame(plans, Display) {
     let levels = [];
     for (let level = 0; level < plans.length; level++) {
-        levels.push(new Level(plans[level]));
-        console.log(level)
+        if(level < plans.length-1) {
+            levels.push(new Level(plans[level], false));
+
+        } else {
+
+            levels.push(new Level(plans[level], true));    
+        }
     }
+    
     for (let level = 0; level < plans.length;) {
-        console.log("start");
-        let state = await runLevel(levels, level,
-            Display);
-            levels[level] = new Level(state.level.plan);
-            console.log("levels[level]1"+ levels[level].plan);
+
+        let state = await runLevel(levels, level, Display);
+        levels[level] = new Level(state.level.plan, state.level.finalLevel);
+
         if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
-            console.log(`level ${level}`);
-            console.log("levels[level]2"+ levels[level].plan);
-
-            state.level.plan  = state.level.plan.replace("%", "@");
+            state.level.plan  = state.level.plan.replace("%", "£");
             state.level.plan  = state.level.plan.replace("@", "%");
+            state.level.plan  = state.level.plan.replace("£", "@");
 
-            levels[level] = new Level(state.level.plan)
+            levels[level] = new Level(state.level.plan, state.level.finalLevel)
             level++;
+
         } else if (state.status == "teleport_backward" && level != 0) {
-            console.log(`level ${level}`);
-            console.log("levels[level]3"+ levels[level].plan);
-            state.level.plan  = state.level.plan.replace("%", "@");
+            state.level.plan  = state.level.plan.replace("%", "£");
             state.level.plan  = state.level.plan.replace("@", "%");
+            state.level.plan  = state.level.plan.replace("£", "@");
+
             levels[level] = new Level(state.level.plan)
             level--;
         }
