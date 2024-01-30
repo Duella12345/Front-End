@@ -7,7 +7,6 @@ class Level {
         this.width = rows[0].length;
         this.startActors = [];
         this.finalLevel = finalLevel;
-        this.haveSwitchStarts = false;
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -515,7 +514,7 @@ async function runGame(plans, Display) {
     for (let level = 0; level < plans.length;) {
 
         let state = await runLevel(levels, level, Display);
-        //levels[level] = new Level(state.level.plan, state.level.finalLevel);
+        levels[level] = new Level(state.level.plan, state.level.finalLevel);
 
         if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
             levels[level] = new Level(state.level.plan, state.level.finalLevel);
