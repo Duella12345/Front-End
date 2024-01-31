@@ -1,12 +1,11 @@
 
 class Level {
-    constructor(plan, finalLevel) {
+    constructor(plan) {
         this.plan = plan;
         let rows = plan.trim().split("\n").map(l => [...l]);
         this.height = rows.length;
         this.width = rows[0].length;
         this.startActors = [];
-        this.finalLevel = finalLevel;
         
         this.rows = rows.map((row, y) => {
             return row.map((ch, x) => {
@@ -331,10 +330,6 @@ Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
-    if (!filtered.some(a => a.type =="coin" && !state.level.finalLevel)){
-            sfx("#levelComplete");
-            status = "won";
-    }
     return new State(state.level, filtered, status);
 };
 
@@ -348,7 +343,7 @@ Glasses.prototype.collide = function (state) {
    let filtered = state.actors.filter(a => a.type != this.type);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replaceAll("x", "#");
-    let level = new Level(state.level.plan, state.level.finalLevel)
+    let level = new Level(state.level.plan)
 
     return new State(level, filtered, state.status);
 };
@@ -503,21 +498,16 @@ function runLevel(levels, level, Display) {
 async function runGame(plans, Display) {
     let levels = [];
     for (let level = 0; level < plans.length; level++) {
-        if(level < plans.length-1) {
-            levels.push(new Level(plans[level], false));
-
-        } else {
-            levels.push(new Level(plans[level], true));    
-        }
+            levels.push(new Level(plans[level]));
     }
 
     for (let level = 0; level < plans.length;) {
 
         let state = await runLevel(levels, level, Display);
-        levels[level] = new Level(state.level.plan, state.level.finalLevel);
+        levels[level] = new Level(state.level.plan);
 
-        if (state.status == "won" || (state.status == "teleport_forward" && level != plans.length - 1)) {
-            levels[level] = new Level(state.level.plan, state.level.finalLevel);
+        if ((state.status == "teleport_forward" && level != plans.length - 1)) {
+            levels[level] = new Level(state.level.plan);
             
             //make sure player starts on left on new level
             level++;
@@ -531,10 +521,10 @@ async function runGame(plans, Display) {
             }
 
             console.debug("replace $ with @ in next level {}", level)
-            levels[level] = new Level(levels[level].plan.replace("$", "@"), levels[level].finalLevel);
+            levels[level] = new Level(levels[level].plan.replace("$", "@"));
 
         } else if (state.status == "teleport_backward" && level != 0) {
-            levels[level] = new Level(state.level.plan, state.level.finalLevel);
+            levels[level] = new Level(state.level.plan);
 
             //make sure player starts on left on new level
             level--;
@@ -548,7 +538,7 @@ async function runGame(plans, Display) {
             }
 
             console.debug("replace % with @ in next level {}", level)
-            levels[level] = new Level(levels[level].plan.replace("%", "@"), levels[level].finalLevel);
+            levels[level] = new Level(levels[level].plan.replace("%", "@"));
         }
     }
     console.log("You've won!");
