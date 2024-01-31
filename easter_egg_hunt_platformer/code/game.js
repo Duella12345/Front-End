@@ -27,14 +27,15 @@ function sfx(querySelector){
 }
 
 class State {
-    constructor(level, actors, status) {
+    constructor(level, actors, status, glasses) {
         this.level = level;
         this.actors = actors;
         this.status = status;
+        this.glasses = glasses;
     }
 
     static start(level) {
-        return new State(level, level.startActors, "playing");
+        return new State(level, level.startActors, "playing", this.glasses);
     }
 
     get player() {
@@ -274,24 +275,24 @@ Level.prototype.touches = function (pos, size, type) {
 State.prototype.update = function (time, keys) {
     let actors = this.actors
         .map(actor => actor.update(time, this, keys));
-    let newState = new State(this.level, actors, this.status);
+    let newState = new State(this.level, actors, this.status, this.glasses);
 
     if (newState.status != "playing") return newState;
 
     let player = newState.player;
     if (this.level.touches(player.pos, player.size, "lava")) {
         sfx("#lava")
-        return new State(this.level, actors, "lost");
+        return new State(this.level, actors, "lost", this.glasses);
     }
 
     if (this.level.touches(player.pos, player.size, "teleport_forward")) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_forward");
+        return new State(this.level, actors, "teleport_forward", this.glasses);
     }
 
-    if (this.level.touches(player.pos, player.size, "teleport_backward")) {
+    if (this.level.touches(player.pos, player.size, "teleport_backward", this.glasses)) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_backward");
+        return new State(this.level, actors, "teleport_backward", this.glasses);
     }
 
     for (let actor of actors) {
@@ -311,15 +312,15 @@ function overlap(actor1, actor2) {
 
 Lava.prototype.collide = function (state) {
     sfx("#lava")
-    return new State(state.level, state.actors, "lost");
+    return new State(state.level, state.actors, "lost", state.glasses);
 };
 
 Teleport.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing");
+    return new State(state.level, state.actors, "playing", state.glasses);
 };
 
 Block.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing");
+    return new State(state.level, state.actors, "playing", state.glasses);
 };
 
 Teleport.prototype.update = function (time, state) {
@@ -330,7 +331,7 @@ Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
-    return new State(state.level, filtered, status);
+    return new State(state.level, filtered, status, state.glasses);
 };
 
 Glasses.prototype.collide = function (state) {
@@ -343,9 +344,10 @@ Glasses.prototype.collide = function (state) {
    let filtered = state.actors.filter(a => a.type != this.type);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replaceAll("x", "#");
+
     let level = new Level(state.level.plan)
 
-    return new State(level, filtered, state.status);
+    return new State(level, filtered, state.status, true);
 };
 
 Lava.prototype.update = function (time, state) {
@@ -504,6 +506,14 @@ async function runGame(plans, Display) {
     for (let level = 0; level < plans.length;) {
 
         let state = await runLevel(levels, level, Display);
+        
+
+        if (state.glasses) {
+            for (let level = 0; level < levels.length; level++) {
+                levels[level]  = new Level(levels[level].plan.replaceAll("x", "#"));
+            }
+        }
+
         levels[level] = new Level(state.level.plan);
 
         if ((state.status == "teleport_forward" && level != plans.length - 1)) {
