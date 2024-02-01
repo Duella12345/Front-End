@@ -17,7 +17,6 @@ class Level {
             });
         });
     }
-
 }
 
 function sfx(querySelector){
@@ -27,11 +26,11 @@ function sfx(querySelector){
 }
 
 class State {
-    constructor(level, actors, status, glasses) {
+    constructor(level, actors, status, glassesFound) {
         this.level = level;
         this.actors = actors;
         this.status = status;
-        this.glasses = glasses;
+        this.glassesFound = glassesFound;
     }
 
     static start(level) {
@@ -275,24 +274,24 @@ Level.prototype.touches = function (pos, size, type) {
 State.prototype.update = function (time, keys) {
     let actors = this.actors
         .map(actor => actor.update(time, this, keys));
-    let newState = new State(this.level, actors, this.status, this.glasses);
+    let newState = new State(this.level, actors, this.status, this.glassesFound);
 
     if (newState.status != "playing") return newState;
 
     let player = newState.player;
     if (this.level.touches(player.pos, player.size, "lava")) {
         sfx("#lava")
-        return new State(this.level, actors, "lost", this.glasses);
+        return new State(this.level, actors, "lost", this.glassesFound);
     }
 
     if (this.level.touches(player.pos, player.size, "teleport_forward")) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_forward", this.glasses);
+        return new State(this.level, actors, "teleport_forward", this.glassesFound);
     }
 
-    if (this.level.touches(player.pos, player.size, "teleport_backward", this.glasses)) {
+    if (this.level.touches(player.pos, player.size, "teleport_backward", this.glassesFound)) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_backward", this.glasses);
+        return new State(this.level, actors, "teleport_backward", this.glassesFound);
     }
 
     for (let actor of actors) {
@@ -312,18 +311,18 @@ function overlap(actor1, actor2) {
 
 Lava.prototype.collide = function (state) {
     sfx("#lava")
-    return new State(state.level, state.actors, "lost", state.glasses);
+    return new State(state.level, state.actors, "lost", state.glassesFound);
 };
 
 Teleport.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing", state.glasses);
+    return new State(state.level, state.actors, "playing", state.glassesFound);
 };
 
 Block.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing", state.glasses);
+    return new State(state.level, state.actors, "playing", state.glassesFound);
 };
 
-Teleport.prototype.update = function (time, state) {
+Teleport.prototype.update = function () {
 };
 
 Coin.prototype.collide = function (state) {
@@ -331,14 +330,20 @@ Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
+
+    updateScore()
+
+    return new State(state.level, filtered, status, state.glassesFound);
+};
+
+function updateScore() {
     scorebox = document.getElementById("score")
     scoreElements = scorebox.innerHTML.split(" / ");
     currentScore = parseInt(scoreElements[0])
     totalScore = parseInt(scoreElements[1])
     currentScore = currentScore + 1
     scorebox.innerHTML = currentScore + " / " + totalScore
-    return new State(state.level, filtered, status, state.glasses);
-};
+}
 
 Glasses.prototype.collide = function (state) {
     sfx("#glasses")
@@ -347,7 +352,7 @@ Glasses.prototype.collide = function (state) {
             state.actors[i] = new Block(state.actors[i].pos, "wall")
         }
     }
-   let filtered = state.actors.filter(a => a.type != this.type);
+    let filtered = state.actors.filter(a => a.type != this.type);
     state.level.plan  = state.level.plan.replace(this.ch, ".");
     state.level.plan  = state.level.plan.replaceAll("x", "#");
 
@@ -444,10 +449,8 @@ function runAnimation(frameFunc) {
 }
 
 function runLevel(levels, level, Display) {
-    
     let display = new Display(document.body, levels[level]);
     let state = State.start(levels[level]);
-    console.debug(state.level.plan)
     let ending = 1;
     let backgroundAudio = [document.querySelector("#audio_one"), document.querySelector("#audio_two")][level%2];
     return new Promise(resolve => {
@@ -459,13 +462,12 @@ function runLevel(levels, level, Display) {
             var playPromise = backgroundAudio.play()
 
             if (playPromise !== undefined) {
-              playPromise.then(_ => {
-                console.debug("playback started!")
-                
-              })
-              .catch(error => {
-                console.debug("playback error {}", error)
-              });
+                playPromise.then(_ => {
+                    console.debug("Started playing!")
+                })
+                .catch(error => {
+                    console.debug("playback error {} Start playing!", error)
+                });
             }
             if (state.status == "playing") {
                 return true;
@@ -475,35 +477,22 @@ function runLevel(levels, level, Display) {
                 backgroundAudio.currentTime = 0;
                 ending -= time;
                 return true;
-
-            } else if (state.status == "teleport_forward") {
-                display.clear();
-                console.debug("teleport_forward")
-                backgroundAudio.pause();
-                backgroundAudio.currentTime = 0;
-                resolve(state);
-                return false;
-
-            } else if (state.status == "teleport_backward") {
-                display.clear();
-                console.debug("teleport_backward")
-                backgroundAudio.pause();
-                backgroundAudio.currentTime = 0;
-                resolve(state);
-                return false;
-
             } else {
-                display.clear();
-                resolve(state);
-                backgroundAudio.pause();
-                backgroundAudio.currentTime = 0;
-                return false;
+                return standardAnimation(display, backgroundAudio, state, resolve)
             }
         });
     });
 }
 
-async function runGame(plans, Display) {
+function standardAnimation(display, backgroundAudio, state, resolve) {
+    display.clear();
+    backgroundAudio.pause();
+    backgroundAudio.currentTime = 0;
+    resolve(state);
+    return false;
+}
+
+function initialLevelAndScoreSetup(plans) {
     let levels = [];
     let totalScore = 0;
     for (let level = 0; level < plans.length; level++) {
@@ -515,53 +504,47 @@ async function runGame(plans, Display) {
     scorebox = document.getElementById("score")
     scorebox.innerHTML = "0 / " + totalScore;
 
-    for (let level = 0; level < plans.length;) {
+    return levels
+}
 
-        let state = await runLevel(levels, level, Display);
-        
+async function runGame(plans, Display) {
+    let levels = initialLevelAndScoreSetup(plans);
 
-        if (state.glasses) {
-            for (let level = 0; level < levels.length; level++) {
-                levels[level]  = new Level(levels[level].plan.replaceAll("x", "#"));
-            }
+    for (let currentLevel = 0; currentLevel < plans.length;) {
+        let state = await runLevel(levels, currentLevel, Display);
+
+        levels[currentLevel] = new Level(state.level.plan);
+
+        if ((state.status == "teleport_forward" && currentLevel != plans.length - 1)) {
+            //make sure player starts on left on new level
+            let targetLevel = currentLevel + 1;
+            // return Player to player_left or player_right
+            levels = basicEntryPointChanges(levels, targetLevel);
+
+            levels[targetLevel] = new Level(levels[targetLevel].plan.replace("$", "@"));
+            currentLevel = targetLevel;
+        } else if (state.status == "teleport_backward" && currentLevel != 0) {
+            //make sure player starts on right on new level
+            let targetLevel = currentLevel - 1;
+            // return Player to player_left or player_right
+            levels = basicEntryPointChanges(levels, targetLevel);
+
+            levels[targetLevel] = new Level(levels[targetLevel].plan.replace("%", "@"));
+            currentLevel = targetLevel;
         }
-
-        levels[level] = new Level(state.level.plan);
-
-        if ((state.status == "teleport_forward" && level != plans.length - 1)) {
-            levels[level] = new Level(state.level.plan);
-            
-            //make sure player starts on left on new level
-            level++;
-            // return Player to player_left or player_right
-            if (levels[level].plan.includes("%")) {
-                console.debug("replace @ with $ in next level")
-                levels[level].plan = levels[level].plan.replace("@", "$");
-            } else {
-                console.debug("replace @ with % in next level")
-                levels[level].plan = levels[level].plan.replace("@", "%");
-            }
-
-            console.debug("replace $ with @ in next level {}", level)
-            levels[level] = new Level(levels[level].plan.replace("$", "@"));
-
-        } else if (state.status == "teleport_backward" && level != 0) {
-            levels[level] = new Level(state.level.plan);
-
-            //make sure player starts on left on new level
-            level--;
-            // return Player to player_left or player_right
-            if (levels[level].plan.includes("%")) {
-                console.debug("replace @ with $ in next level")
-                levels[level].plan = levels[level].plan.replace("@", "$");
-            } else {
-                console.debug("replace @ with % in next level")
-                levels[level].plan = levels[level].plan.replace("@", "%");
-            }
-
-            console.debug("replace % with @ in next level {}", level)
-            levels[level] = new Level(levels[level].plan.replace("%", "@"));
+        
+        if (state.glassesFound) {
+            levels[currentLevel]  = new Level(levels[currentLevel].plan.replaceAll("x", "#"));
         }
     }
-    console.log("You've won!");
+    console.log("You've won: Go to https://snip.bt.com/easywin");
+}
+
+function basicEntryPointChanges(levels, targetLevel) {
+    if (levels[targetLevel].plan.includes("%")) {
+        levels[targetLevel].plan = levels[targetLevel].plan.replace("@", "$");
+    } else {
+        levels[targetLevel].plan = levels[targetLevel].plan.replace("@", "%");
+    }
+    return levels
 }
