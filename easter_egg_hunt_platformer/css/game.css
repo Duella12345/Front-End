@@ -65,6 +65,10 @@
   box-shadow: -4px -7px 8px white, 4px -7px 8px white;
 }
 
+#score {
+  color: white;
+}
+
 /* game overflow */
 .game {
   overflow: hidden;

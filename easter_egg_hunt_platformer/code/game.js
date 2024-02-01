@@ -331,6 +331,12 @@ Coin.prototype.collide = function (state) {
     let filtered = state.actors.filter(a => a != this);
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
+    scorebox = document.getElementById("score")
+    scoreElements = scorebox.innerHTML.split(" / ");
+    currentScore = parseInt(scoreElements[0])
+    totalScore = parseInt(scoreElements[1])
+    currentScore = currentScore + 1
+    scorebox.innerHTML = currentScore + " / " + totalScore
     return new State(state.level, filtered, status, state.glasses);
 };
 
@@ -499,9 +505,15 @@ function runLevel(levels, level, Display) {
 
 async function runGame(plans, Display) {
     let levels = [];
+    let totalScore = 0;
     for (let level = 0; level < plans.length; level++) {
             levels.push(new Level(plans[level]));
+           
+            levelScore =(levels[level].plan.match(/(1|2|3|4|5|6|7|8|9)/g) || []).length;
+            totalScore = totalScore + levelScore;
     }
+    scorebox = document.getElementById("score")
+    scorebox.innerHTML = "0 / " + totalScore;
 
     for (let level = 0; level < plans.length;) {
 
