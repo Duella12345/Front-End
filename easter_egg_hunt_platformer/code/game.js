@@ -33,8 +33,8 @@ class State {
         this.glassesFound = glassesFound;
     }
 
-    static start(level) {
-        return new State(level, level.startActors, "playing", this.glasses);
+    static start(level, glassesFound) {
+        return new State(level, level.startActors, "playing", glassesFound);
     }
 
     get player() {
@@ -448,9 +448,9 @@ function runAnimation(frameFunc) {
     requestAnimationFrame(frame);
 }
 
-function runLevel(levels, level, Display) {
+function runLevel(levels, level, Display, gotGlasses) {
     let display = new Display(document.body, levels[level]);
-    let state = State.start(levels[level]);
+    let state = State.start(levels[level], gotGlasses);
     let ending = 1;
     let backgroundAudio = [document.querySelector("#audio_one"), document.querySelector("#audio_two")][level%2];
     return new Promise(resolve => {
@@ -509,13 +509,17 @@ function initialLevelAndScoreSetup(plans) {
 
 async function runGame(plans, Display) {
     let levels = initialLevelAndScoreSetup(plans);
+    
+    let currentLevel = 0;
+    let gotGlasses = false;
 
-    for (let currentLevel = 0; currentLevel < plans.length;) {
-        let state = await runLevel(levels, currentLevel, Display);
+    while(true) {
+        let state = await runLevel(levels, currentLevel, Display, gotGlasses);
 
         levels[currentLevel] = new Level(state.level.plan);
 
         if ((state.status == "teleport_forward" && currentLevel != plans.length - 1)) {
+
             //make sure player starts on left on new level
             let targetLevel = currentLevel + 1;
             // return Player to player_left or player_right
@@ -524,6 +528,7 @@ async function runGame(plans, Display) {
             levels[targetLevel] = new Level(levels[targetLevel].plan.replace("$", "@"));
             currentLevel = targetLevel;
         } else if (state.status == "teleport_backward" && currentLevel != 0) {
+            
             //make sure player starts on right on new level
             let targetLevel = currentLevel - 1;
             // return Player to player_left or player_right
@@ -532,8 +537,10 @@ async function runGame(plans, Display) {
             levels[targetLevel] = new Level(levels[targetLevel].plan.replace("%", "@"));
             currentLevel = targetLevel;
         }
+
+        gotGlasses = state.glassesFound;
         
-        if (state.glassesFound) {
+        if (gotGlasses) {
             levels[currentLevel]  = new Level(levels[currentLevel].plan.replaceAll("x", "#"));
         }
     }
