@@ -343,6 +343,16 @@ function updateScore() {
     totalScore = parseInt(scoreElements[1])
     currentScore = currentScore + 1
     scorebox.innerHTML = currentScore + " / " + totalScore
+
+    if (currentScore == totalScore) textOn();
+}
+
+function textOn() {
+    document.getElementById("overlay").style.display = "block";
+}
+  
+function textOff() {
+document.getElementById("overlay").style.display = "none";
 }
 
 Glasses.prototype.collide = function (state) {
@@ -528,7 +538,7 @@ async function runGame(plans, Display) {
             levels[targetLevel] = new Level(levels[targetLevel].plan.replace("$", "@"));
             currentLevel = targetLevel;
         } else if (state.status == "teleport_backward" && currentLevel != 0) {
-            
+
             //make sure player starts on right on new level
             let targetLevel = currentLevel - 1;
             // return Player to player_left or player_right
