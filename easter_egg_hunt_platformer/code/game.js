@@ -348,7 +348,7 @@ function updateScore() {
 }
 
 function textOn() {
-    document.getElementById("text").innerHTML = "Well done! You got all the tokens! Have a bonus!"
+    document.getElementById("text").innerHTML = "Well done! You got all the tokens! Have a bonus! Well done! You got all the tokens! Have a bonus! Well done! You got all the tokens! Have a bonus!"
     
     document.getElementById("overlay").style.display = "block";
 }

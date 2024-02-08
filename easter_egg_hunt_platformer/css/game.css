@@ -85,12 +85,12 @@
 
 #text{
   position: absolute;
-  top: 50%;
-  left: 50%;
-  font-size: 50px;
+  padding-top: 20%;
+  padding-right: 10%;
+  padding-bottom: 20%;
+  padding-left: 10%;
+  font-size: 30px;
   color: white;
-  transform: translate(-50%,-50%);
-  -ms-transform: translate(-50%,-50%);
 }
 
 /* game overflow */
