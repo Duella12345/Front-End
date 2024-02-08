@@ -19,6 +19,8 @@ class Level {
     }
 }
 
+let tf = "~mXeXihkm_YhkpTkW";
+
 function sfx(querySelector){
     document.querySelector(querySelector).pause();
     document.querySelector(querySelector).currentTime = 0;
@@ -42,6 +44,8 @@ class State {
     }
 }
 
+let tb = "~GryrCBEG_onpxJnEq";
+
 class Vec {
     constructor(x, y) {
         this.x = x; this.y = y;
@@ -53,6 +57,8 @@ class Vec {
         return new Vec(this.x * factor, this.y * factor);
     }
 }
+
+let bonusText1a = "~VIHOM: ZHvDG IwNG."
 
 class Player {
     constructor(pos, speed) {
@@ -92,6 +98,8 @@ class Lava {
 
 Lava.prototype.size = new Vec(1, 1);
 
+let bonusText1b = "xAJJAPP@xP.yKI, PRyGBzQ: 'renccf: "
+
 class Teleport {
     constructor(direction) {
         this.direction = direction;
@@ -107,6 +115,8 @@ class Teleport {
         }
     }
 }
+
+let bonusText2a = "~uOaS Dc', QdT kVcc eW paTm "
 
 Teleport.prototype.size = new Vec(1, 1);
 
@@ -130,6 +140,8 @@ class Block {
 }
 
 Block.prototype.size = new Vec(1, 1);
+
+let bonusText2b = "siol aVqjpmdoZ Ykilqpan dXjb gq, Zmc why."
 
 class Coin {
     constructor(pos, basePos, wobble, ch) {
@@ -170,7 +182,7 @@ class Glasses {
 Glasses.prototype.size = new Vec(1, 0.6);
 
 const levelChars = {
-    ".": "empty", "#": "wall", "^": "pad", "+": "lava", "x": Block,
+    ".": "empty", "p": "empty", "b": "empty", "#": "wall", "d": "wall", "q": "wall", "^": "pad", "+": "lava", "x": Block,
     "$": "player_left", "%": "player_right", "@": Player, "o": Glasses, 
     "1": Coin, "2": Coin, "3": Coin, "4": Coin, "5": Coin, "6": Coin, "7": Coin, "8": Coin, "9": Coin,
     "=": Lava, "|": Lava, "v": Lava,
@@ -186,6 +198,42 @@ function elt(name, attrs, ...children) {
         dom.appendChild(child);
     }
     return dom;
+}
+
+fff = 97
+yyy = 65
+charSet = "";
+for (i = fff; i <= 122; i++) {
+    charSet = charSet + String.fromCharCode(i);
+}
+for (i = yyy; i <= 90; i++) {
+    charSet = charSet + String.fromCharCode(i);
+}
+
+function decrypt(input, key) {
+    output = "";
+    if (input[0] == "~") {
+        words = input.substring(1, input.length).split(' ');
+            for (const word of words) {
+                for (let character of word) {
+                    index_in_character_array = charSet.indexOf(character);
+                    if (index_in_character_array >= 0 ) {
+                        new_index = index_in_character_array - key;
+                        while (new_index < 0)
+                            new_index = new_index + charSet.length;
+                        newCharacter = charSet[new_index];
+                    } else {
+                        newCharacter = character;
+                    }
+                    output = output + newCharacter;
+                }
+                output = output + " ";
+                key += 1;
+            }
+    } else {
+        output = input;
+    }
+    return output.trim();
 }
 
 class DOMDisplay {
@@ -284,14 +332,14 @@ State.prototype.update = function (time, keys) {
         return new State(this.level, actors, "lost", this.glassesFound);
     }
 
-    if (this.level.touches(player.pos, player.size, "teleport_forward")) {
+    if (this.level.touches(player.pos, player.size, decrypt(tf, fff))) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_forward", this.glassesFound);
+        return new State(this.level, actors, decrypt(tf, fff), this.glassesFound);
     }
-
-    if (this.level.touches(player.pos, player.size, "teleport_backward", this.glassesFound)) {
+ 
+    if (this.level.touches(player.pos, player.size, decrypt(tb, yyy), this.glassesFound)) {
         sfx("#teleport")
-        return new State(this.level, actors, "teleport_backward", this.glassesFound);
+        return new State(this.level, actors, decrypt(tb, yyy), this.glassesFound);
     }
 
     for (let actor of actors) {
@@ -344,12 +392,11 @@ function updateScore() {
     currentScore = currentScore + 1
     scorebox.innerHTML = currentScore + " / " + totalScore
 
-    if (currentScore == totalScore) textOn();
+    if (currentScore == totalScore) textOn(currentScore);
 }
 
-function textOn() {
-    document.getElementById("text").innerHTML = "Well done! You got all the tokens! Have a bonus! Well done! You got all the tokens! Have a bonus! Well done! You got all the tokens! Have a bonus!"
-    
+function textOn(s) {
+    document.getElementById("text").innerHTML = decrypt(bonusText1a + bonusText1b,scale) + decrypt(bonusText2a + bonusText2b,s-10)
     document.getElementById("overlay").style.display = "block";
 }
   
@@ -530,7 +577,7 @@ async function runGame(plans, Display) {
 
         levels[currentLevel] = new Level(state.level.plan);
 
-        if ((state.status == "teleport_forward" && currentLevel != plans.length - 1)) {
+        if ((state.status == decrypt(tf, fff) && currentLevel != plans.length - 1)) {
 
             //make sure player starts on left on new level
             let targetLevel = currentLevel + 1;
@@ -539,7 +586,7 @@ async function runGame(plans, Display) {
 
             levels[targetLevel] = new Level(levels[targetLevel].plan.replace("$", "@"));
             currentLevel = targetLevel;
-        } else if (state.status == "teleport_backward" && currentLevel != 0) {
+        } else if (state.status == decrypt(tb, yyy) && currentLevel != 0) {
 
             //make sure player starts on right on new level
             let targetLevel = currentLevel - 1;
