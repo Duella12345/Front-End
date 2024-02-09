@@ -28,15 +28,16 @@ function sfx(querySelector){
 }
 
 class State {
-    constructor(level, actors, status, glassesFound) {
+    constructor(level, actors, status, glassesFound, startTime) {
         this.level = level;
         this.actors = actors;
         this.status = status;
         this.glassesFound = glassesFound;
+        this.startTime = startTime;
     }
 
-    static start(level, glassesFound) {
-        return new State(level, level.startActors, "playing", glassesFound);
+    static start(level, glassesFound, startTime) {
+        return new State(level, level.startActors, "playing", glassesFound, startTime);
     }
 
     get player() {
@@ -322,24 +323,24 @@ Level.prototype.touches = function (pos, size, type) {
 State.prototype.update = function (time, keys) {
     let actors = this.actors
         .map(actor => actor.update(time, this, keys));
-    let newState = new State(this.level, actors, this.status, this.glassesFound);
+    let newState = new State(this.level, actors, this.status, this.glassesFound, this.startTime);
 
     if (newState.status != "playing") return newState;
 
     let player = newState.player;
     if (this.level.touches(player.pos, player.size, "lava")) {
         sfx("#lava")
-        return new State(this.level, actors, "lost", this.glassesFound);
+        return new State(this.level, actors, "lost", this.glassesFound, this.startTime);
     }
 
     if (this.level.touches(player.pos, player.size, decrypt(tf, fff))) {
         sfx("#teleport")
-        return new State(this.level, actors, decrypt(tf, fff), this.glassesFound);
+        return new State(this.level, actors, decrypt(tf, fff), this.glassesFound, this.startTime);
     }
  
     if (this.level.touches(player.pos, player.size, decrypt(tb, yyy), this.glassesFound)) {
         sfx("#teleport")
-        return new State(this.level, actors, decrypt(tb, yyy), this.glassesFound);
+        return new State(this.level, actors, decrypt(tb, yyy), this.glassesFound, this.startTime);
     }
 
     for (let actor of actors) {
@@ -359,15 +360,15 @@ function overlap(actor1, actor2) {
 
 Lava.prototype.collide = function (state) {
     sfx("#lava")
-    return new State(state.level, state.actors, "lost", state.glassesFound);
+    return new State(state.level, state.actors, "lost", state.glassesFound, state.startTime);
 };
 
 Teleport.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing", state.glassesFound);
+    return new State(state.level, state.actors, "playing", state.glassesFound, state.startTime);
 };
 
 Block.prototype.collide = function (state) {
-    return new State(state.level, state.actors, "playing", state.glassesFound);
+    return new State(state.level, state.actors, "playing", state.glassesFound, state.startTime);
 };
 
 Teleport.prototype.update = function () {
@@ -379,12 +380,12 @@ Coin.prototype.collide = function (state) {
     let status = state.status;
     state.level.plan  = state.level.plan.replace(this.ch, ".");
 
-    updateScore()
+    updateScore(state)
 
-    return new State(state.level, filtered, status, state.glassesFound);
+    return new State(state.level, filtered, status, state.glassesFound, state.startTime);
 };
 
-function updateScore() {
+function updateScore(state) {
     scorebox = document.getElementById("score")
     scoreElements = scorebox.innerHTML.split(" / ");
     currentScore = parseInt(scoreElements[0])
@@ -392,11 +393,14 @@ function updateScore() {
     currentScore = currentScore + 1
     scorebox.innerHTML = currentScore + " / " + totalScore
 
-    if (currentScore == totalScore) textOn(currentScore);
+    if (currentScore == totalScore) {
+        textOn(currentScore, state.startTime);
+    }
 }
 
-function textOn(s) {
-    document.getElementById("text").innerHTML = decrypt(bonusText1a + bonusText1b,scale) + decrypt(bonusText2a + bonusText2b,s-10)
+function textOn(s, t) {
+    time = (new Date().getTime() - t) / 1000;
+    document.getElementById("text").innerHTML = decrypt(bonusText1a + bonusText1b,scale) + decrypt(bonusText2a + bonusText2b,s-10) + time;
     document.getElementById("overlay").style.display = "block";
 }
   
@@ -417,7 +421,7 @@ Glasses.prototype.collide = function (state) {
 
     let level = new Level(state.level.plan)
 
-    return new State(level, filtered, state.status, true);
+    return new State(level, filtered, state.status, true, state.startTime);
 };
 
 Lava.prototype.update = function (time, state) {
@@ -507,9 +511,9 @@ function runAnimation(frameFunc) {
     requestAnimationFrame(frame);
 }
 
-function runLevel(levels, level, Display, gotGlasses) {
+function runLevel(levels, level, Display, gotGlasses, startTime) {
     let display = new Display(document.body, levels[level]);
-    let state = State.start(levels[level], gotGlasses);
+    let state = State.start(levels[level], gotGlasses, startTime);
     let ending = 1;
     let backgroundAudio = [document.querySelector("#audio_one"), document.querySelector("#audio_two")][level%2];
     return new Promise(resolve => {
@@ -571,9 +575,10 @@ async function runGame(plans, Display) {
     
     let currentLevel = 0;
     let gotGlasses = false;
+    let startTime = new Date().getTime();
 
     while(true) {
-        let state = await runLevel(levels, currentLevel, Display, gotGlasses);
+        let state = await runLevel(levels, currentLevel, Display, gotGlasses, startTime);
 
         levels[currentLevel] = new Level(state.level.plan);
 
